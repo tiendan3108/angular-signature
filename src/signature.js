@@ -14,7 +14,7 @@ angular.module('signature').directive('signaturePad', ['$interval', '$timeout', 
     return {
       restrict: 'EA',
       replace: true,
-      template: '<div class="signature" style="width: 100%; max-width:{{width}}px; height: 100%; max-height:{{height}}px;"><canvas style="display: block; margin: 0 auto;" ng-mouseup="onMouseup()" ng-mousedown="notifyDrawing({ drawing: true })"></canvas></div>',
+      template: '<div class="signature" style="position:relative; flex: 1;-webkit-box-flex: 1;-ms-flex: 1;"><canvas style="position: absolute;left: 0;top: 0;width: 100%;height: 100%;" ng-mouseup="onMouseup()" ng-mousedown="notifyDrawing({ drawing: true })"></canvas></div>',
       scope: {
         accept: '=?',
         clear: '=?',
@@ -72,12 +72,6 @@ angular.module('signature').directive('signaturePad', ['$interval', '$timeout', 
         var scale = 0;
         var ctx = canvas.getContext('2d');
 
-        var width = parseInt(scope.width, 10);
-        var height = parseInt(scope.height, 10);
-
-        canvas.width = width;
-        canvas.height = height;
-
         scope.signaturePad = new SignaturePad(canvas);
 
         scope.setDataUrl = function(dataUrl) {
@@ -100,8 +94,9 @@ angular.module('signature').directive('signaturePad', ['$interval', '$timeout', 
         });
         
         var calculateScale = function() {
-          var scaleWidth = Math.min(parent.clientWidth / width, 1);
-          var scaleHeight = Math.min(parent.clientHeight / height, 1);
+
+          var scaleWidth = Math.min(parent.clientWidth / canvas.clientWidth, 1);
+          var scaleHeight = Math.min(parent.clientHeight / canvas.clientHeight, 1);
 
           var newScale = Math.min(scaleWidth, scaleHeight);
 
@@ -109,10 +104,12 @@ angular.module('signature').directive('signaturePad', ['$interval', '$timeout', 
             return;
           }
 
-          var newWidth = width * newScale;
-          var newHeight = height * newScale;
-          canvas.style.height = Math.round(newHeight) + "px";
-          canvas.style.width = Math.round(newWidth) + "px";
+          scope.signaturePad.clear();
+
+          canvas.style.height = Math.round(parent.clientHeight) + "px";
+          canvas.style.width = Math.round(parent.clientWidth) + "px";
+          canvas.height = parent.clientHeight;
+          canvas.width = parent.clientWidth;
 
           scale = newScale;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -125,9 +122,9 @@ angular.module('signature').directive('signaturePad', ['$interval', '$timeout', 
           resizeIH = null;
         });
 
-        angular.element($window).bind('resize', calculateScale);
+        angular.element($window).on('resize', calculateScale);
         scope.$on('$destroy', function () {
-          angular.element($window).unbind('resize', calculateScale);
+          angular.element($window).on('resize', calculateScale);
         });
 
         calculateScale();
